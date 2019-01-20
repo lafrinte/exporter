@@ -1,0 +1,6 @@
+.idea/
+*.py[cod]
+*.so
+*.egg
+*.egg-info
+* __pycache__
