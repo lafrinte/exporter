@@ -5,6 +5,6 @@ from . import api
 from sanic import response
 
 
-@api.route('/')
+@api.route('/state')
 async def state(request):
     return response.json(dict(state='running'))

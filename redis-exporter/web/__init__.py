@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 
 from sanic import Sanic, Blueprint, response
+
 from web.api import api
+from web.metrics import metrics
 
 
 def create_app():
