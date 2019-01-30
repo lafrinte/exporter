@@ -7,8 +7,6 @@ from sanic.log import logger
 from web.public import GlobalVars
 from web.decorator import parse_cluster_nodes
 
-from aiocache import cached
-
 from aredis import StrictRedis
 from aredis import ResponseError, ConnectionError, TimeoutError
 
