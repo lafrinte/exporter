@@ -97,11 +97,15 @@ class RedisInfo(object):
         return await Cache.url[url].get_cluster_state_info()
 
     async def get_all_datas(self):
-        cluster_nodes, instances_datas, cluster_datas = set(), list(), list()
+        cluster_nodes, instance_nodes, instances_datas, cluster_datas = set(), set(), list(), list()
 
         for url in self.urls:
+            if url in instance_nodes:
+                continue
+
             session = self._get_session(url)
             temp_in_data = await session.get_instance_info()
+            instance_nodes.add(url)
 
             if temp_in_data and temp_in_data['redis_mode'] == 'cluster' and url not in cluster_nodes:
                 logger.info('Detect new cluster node {}, start to get cluster info'.format(self.shadow_password(url)))
