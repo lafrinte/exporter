@@ -1,8 +1,14 @@
 ## deploy
 
+* command
+
 ```
 python -m sanic app.app --host=HOST --port=PORT --worker=WORKER_NUM
 ```
+
+* log
+
+only enable stream log
 
 ## request
 
