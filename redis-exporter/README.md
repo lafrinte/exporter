@@ -12,8 +12,19 @@ only enable stream log
 
 ## request
 
+* request redis data
+
+if request from terminal, use `pretty=True` will enable indent to json data
+
 ```
 ➜  redis-exporter git:(master) ✗ curl http://127.0.0.1:8000/metrics/redis\?pretty\=True\&url\=redis://:123@172.21.3.163\&url\=redis://localhost
+```
+
+* request monitor statue
+
+```
+➜  redis-exporter git:(master) curl http://127.0.0.1:8000/api/state
+{"state":"running"}%
 ```
 
 ## response

@@ -5,7 +5,6 @@ from sanic import Sanic, Blueprint, response
 
 from web.api import api
 from web.metrics import metrics
-# from web.public import LOGGING_CONFIG
 
 
 def create_app():
