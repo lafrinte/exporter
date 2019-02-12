@@ -95,8 +95,9 @@ class MysqlInfo(object):
             if master_url not in self.urls:
                 logger.info("Detect new cluster node {}, it will collect data after current action finished".format(shadow_password(master_url)))
                 self.datastore['other_urls'].add(url)
-                self.datastore['cluster'].append(dict(arch=(shadow_password(master_url), shadow_password(url)),
-                                                      backup=slave_status))
+                self.datastore['cluster'].append(dict(arch=dict(master=shadow_password(master_url),
+                                                                slave=)shadow_password(url)),
+                                                      state=slave_status))
         return dict(status, **variables)
 
     async def get_all_datas(self):
