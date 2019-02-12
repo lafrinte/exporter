@@ -55,7 +55,8 @@ class AsyncMysql(Connection):
     async def get_slave_status(self):
         cursor = await self._get_cursor()
         await cursor.execute('show slave status')
-        return await cursor.fetchall()
+        data = await cursor.fetchall()
+        return data[0] if data else data
 
     async def get_master_status(self):
         cursor = await self._get_cursor()
@@ -89,6 +90,7 @@ class MysqlInfo(object):
         variables = await session.get_variables()
         master_status = await session.get_master_status()
         slave_status = await session.get_slave_status()
+        print(slave_status)
 
         if slave_status:
             master_url = await session.get_master_url(slave_status)
@@ -104,7 +106,7 @@ class MysqlInfo(object):
         results = await gather(*[ensure_future(self.collection(url)) for url in self.urls])
 
         if self.datastore['other_urls']:
-            other_results = await gather(*[ensure_future(self.collection(url) for url in self.datastore['other_urls'])])
+            other_results = await gather(*[ensure_future(self.collection(url)) for url in self.datastore['other_urls']])
             results.extend(other_results)
         return dict(instance=[x for x in results],
                     cluster=self.datastore['cluster'])
