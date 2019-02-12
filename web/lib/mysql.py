@@ -73,6 +73,7 @@ class MysqlInfo(object):
 
     def __init__(self, urls):
         self.urls = set(urls)
+        print(self.urls)
 
         # if a node has slave info, we will parse the slave info to get master url, and then save the master
         # and slave info into self.datastore['cluster']. if the master url is not in self.urls. we put it into
@@ -83,7 +84,6 @@ class MysqlInfo(object):
         shadow_url = shadow_password(url)
 
         logger.info("Start collection for {}".format(shadow_url))
-
         session = AsyncMysql.from_url(url)
         status = await session.get_status()
         variables = await session.get_variables()
@@ -101,7 +101,9 @@ class MysqlInfo(object):
 
     async def get_all_datas(self):
         results = await gather(*[ensure_future(self.collection(url)) for url in self.urls])
-        other_results = await gather(*[ensure_future(self.collection(url) for url in self.datastore['other_urls'])])
 
-        return dict(instance=[x for x in results.extend(other_results)],
+        if self.datastore['other_urls']:
+            other_results = await gather(*[ensure_future(self.collection(url) for url in self.datastore['other_urls'])])
+            results.extend(other_results)
+        return dict(instance=[x for x in results],
                     cluster=self.datastore['cluster'])
