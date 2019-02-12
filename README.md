@@ -66,10 +66,7 @@ cluster archtechive is from command `show slave status`, getting master host and
    ],
    "cluster": [
       {
-          "arch": {
-            "master": master_url,
-            "slave": slave_url
-            },
+          "arch": {arch_data},
           "state": {state_data}
       }
    ]   
@@ -249,7 +246,10 @@ cluster archtechive is from command `show slave status`, getting master host and
    ],
    "cluster": [
       {
-          "arch": {arch_data},
+          "arch": {
+            "master": master_url,
+            "slave": slave_url
+            },
           "state": {state_data}
       }
    ]   
