@@ -74,7 +74,6 @@ class MysqlInfo(object):
 
     def __init__(self, urls):
         self.urls = set(urls)
-        print(self.urls)
 
         # if a node has slave info, we will parse the slave info to get master url, and then save the master
         # and slave info into self.datastore['cluster']. if the master url is not in self.urls. we put it into
@@ -90,17 +89,16 @@ class MysqlInfo(object):
         variables = await session.get_variables()
         master_status = await session.get_master_status()
         slave_status = await session.get_slave_status()
-        print(slave_status)
 
         if slave_status:
             master_url = await session.get_master_url(slave_status)
             if master_url not in self.urls:
-                logger.info("Detect new cluster node {}, it will collect data after current action finished".format(shadow_password(master_url)))
-                self.datastore['other_urls'].add(url)
+                logger.info("Detect new cluster node {}".format(shadow_password(master_url)))
+                self.datastore['other_urls'].add(master_url)
                 self.datastore['cluster'].append(dict(arch=dict(master=shadow_password(master_url),
-                                                                slave=shadow_password(url)),
+                                                                slave=shadow_url),
                                                       state=slave_status))
-        return dict(status, **variables)
+        return {shadow_url: dict(status, **variables)}
 
     async def get_all_datas(self):
         results = await gather(*[ensure_future(self.collection(url)) for url in self.urls])

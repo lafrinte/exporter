@@ -260,15 +260,49 @@ cluster archtechive is from command `show slave status`, getting master host and
 {
     "instance":[
         {
-            "Aborted_clients":"5",
-            "Aborted_connects":"0",
-            "Acl_cache_items_count":"0",
-            "Binlog_cache_disk_use":"0",
-            ...
+            "mysql:\/\/172.18.232.142:8801":{
+                "Aborted_clients":"29517",
+                "Aborted_connects":"0",
+                ...
+            }
+        },
+        {
+            "mysql:\/\/127.0.0.1:3306":{
+                "Aborted_clients":"6",
+                "Aborted_connects":"0",
+                ...
+            }
+        },
+        {
+            "mysql:\/\/172.18.232.144:8801":{
+                "Aborted_clients":"27035",
+                "Aborted_connects":"5",
+                ...
+            }
         }
     ],
     "cluster":[
-
+        {
+            "arch":{
+                "master":"mysql:\/\/172.18.232.144:8801",
+                "slave":"mysql:\/\/172.18.232.142:8801"
+            },
+            "state":{
+                "Slave_IO_State":"Waiting for master to send event",
+                "Master_Host":"172.18.232.144",
+                "Master_User":"sla",
+                "Master_Port":8801,
+                "Connect_Retry":2,
+                "Master_Log_File":"mysql-bin.000002",
+                "Read_Master_Log_Pos":96550794,
+                "Relay_Log_File":"relay-bin.000005",
+                "Relay_Log_Pos":48219118,
+                "Relay_Master_Log_File":"mysql-bin.000002",
+                "Slave_IO_Running":"Yes",
+                "Slave_SQL_Running":"Yes",
+                ...
+            }
+        }
     ]
 }
 ```
