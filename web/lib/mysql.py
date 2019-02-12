@@ -7,6 +7,7 @@ from asyncio import gather, ensure_future
 from .utils import shadow_password
 
 from aiomysql import Connection
+from aiomysql import OperationalError
 from aiomysql.cursors import DeserializationCursor, DictCursor
 from urllib.parse import urlparse
 
@@ -24,7 +25,8 @@ class AsyncMysql(Connection):
                            user=url.username,
                            port=url.port if url.port else 3306,
                            host=url.hostname if url.hostname else 'localhost',
-                           password=url.password)
+                           password=url.password,
+                           connect_timeout=5)
         url_options.update(kwargs)
         return cls(**url_options)
 
@@ -36,35 +38,60 @@ class AsyncMysql(Connection):
         return 'mysql://{}:{}@{}:{}'.format(self.user, self._password, host, port)
 
     async def _get_cursor(self):
+        msg = "A {} raised when handle a session to {}"
+        strict_url = 'mysql://{}:{}'.format(self.host, self.port)
+
         if self.closed:
-            await self._connect()
+            try:
+                await self._connect()
+            except OperationalError:
+                logger.error(msg.format('OperationalError', strict_url))
+                return None
+            except:
+                logger.error(msg.format("UnExpected", strict_url))
+                return None
         return await self.cursor(*self.default_cursors)
 
     async def get_status(self):
         cursor = await self._get_cursor()
+        if not cursor:
+            return dict()
+
         await cursor.execute('show status')
         data = await cursor.fetchall()
         return {x['Variable_name']:x['Value'] for x in data}
 
     async def get_variables(self):
         cursor = await self._get_cursor()
+        if not cursor:
+            return dict()
+
         await cursor.execute('show variables')
         data = await cursor.fetchall()
         return {x['Variable_name']:x['Value'] for x in data}
 
     async def get_slave_status(self):
         cursor = await self._get_cursor()
+        if not cursor:
+            return dict()
+
         await cursor.execute('show slave status')
         data = await cursor.fetchall()
         return data[0] if data else data
 
     async def get_master_status(self):
         cursor = await self._get_cursor()
+        if not cursor:
+            return dict()
+
         await cursor.execute('show master status')
         return await cursor.fetchall()
 
     async def get_sql_output(self, sql, key=None):
         cursor = await self._get_cursor()
+        if not cursor:
+            return dict()
+
         await cursor.execute(sql)
         data = await cursor.fetchall()
         return {key: data} if key else data
