@@ -1,14 +1,72 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import functools
+
 from sanic.log import logger
 from asyncio import gather, ensure_future
 
-from web.public import GlobalVars
-from web.decorator import parse_cluster_nodes
+from .utils import shadow_password
 
 from aredis import StrictRedis
 from aredis import ResponseError, ConnectionError, TimeoutError
+
+
+def parse_redis_cluster_nodes(func):
+
+    def parse_slots(s):
+        slots, migrations = [], []
+        for r in s.split(' '):
+            if '->-' in r:
+                slot_id, dst_node_id = r[1:-1].split('->-', 1)
+                migrations.append({
+                    'slot': int(slot_id),
+                    'node_id': dst_node_id,
+                    'state': 'migrating'
+                })
+            elif '-<-' in r:
+                slot_id, src_node_id = r[1:-1].split('-<-', 1)
+                migrations.append({
+                    'slot': int(slot_id),
+                    'node_id': src_node_id,
+                    'state': 'importing'
+                })
+            else:
+                slots.append(r)
+        return slots, migrations
+
+    @functools.wraps(func)
+    async def wrapped(*args, **kwargs):
+        resp = await func(*args, **kwargs)
+        nodes = []
+
+        if isinstance(resp, str):
+            resp = resp.splitlines()
+
+        for line in resp:
+            parts = line.split(' ', 8)
+            self_id, addr, flags, master_id, ping_sent, \
+                pong_recv, config_epoch, link_state = parts[:8]
+
+            host, port = addr.rsplit(':', 1)
+
+            node = {
+                'id': self_id,
+                'url': 'redis://{}:{}'.format(host, port.split('@')[0]),
+                'flags': list(set(flags.split(',')) - {'myself', 'fail'})[0],
+                'master': master_id if master_id != '-' else None,
+                'link-state': link_state,
+                'slots': [],
+                'migrations': [],
+            }
+
+            if len(parts) >= 9:
+                slots, migrations = parse_slots(parts[8])
+                node['slots'], node['migrations'] = tuple(slots), migrations
+
+            nodes.append(node)
+        return nodes
+    return wrapped
 
 
 class AsyncRedis(StrictRedis):
@@ -55,7 +113,7 @@ class AsyncRedis(StrictRedis):
             logger.error(msg.format("UnExpected", self.strict_url))
             return False
 
-    @parse_cluster_nodes
+    @parse_redis_cluster_nodes
     async def get_cluster_nodes_info(self):
         return await self.execute_command("cluster nodes")
 
@@ -87,18 +145,11 @@ class RedisInfo(object):
         self.datastore = dict(cluster_urls=set(),
                               other_urls=set())
 
-    def shadow_password(self, url):
-        return ''.join([url[:8], url[url.index('@') + 1:]]) if '@' in url else url
-
-    def _get_session(self, url):
-        return GlobalVars.urls[url] if url in GlobalVars.urls else AsyncRedis.from_url(url, **self.options)
-
     async def collection(self, url, cluster=True):
-        data, shadow_url = dict(instance=dict(), cluster=dict()), self.shadow_password(url)
+        data, shadow_url = dict(instance=dict(), cluster=dict()), shadow_password(url)
 
-        logger.info("Start collection for {}".format(self.shadow_password(url)))
-
-        session = self._get_session(url)
+        logger.info("Start collection for {}".format(shadow_url))
+        session = AsyncRedis.from_url(url, **self.options)
         data["instance"][shadow_url] = await session.get_instance_info()
 
         if cluster and data["instance"][shadow_url].get('redis_mode') == 'cluster' and url not in self.datastore["cluster_urls"]:
