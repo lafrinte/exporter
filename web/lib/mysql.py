@@ -57,7 +57,7 @@ class AsyncMysql(Connection):
         if not cursor:
             return dict()
 
-        await cursor.execute('show status')
+        await cursor.execute('show global status')
         data = await cursor.fetchall()
         return {x['Variable_name']:x['Value'] for x in data}
 
