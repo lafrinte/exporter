@@ -41,7 +41,7 @@ if request from terminal, use `pretty=True` will enable indent to json data
 
 * data source
 
-instance data is from command `show status` and `show variables`
+instance data is from command `show global status` and `show variables`
 
 cluster state is from command `show slave status` if current node has a valid output
 

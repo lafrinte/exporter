@@ -11,12 +11,28 @@ from aiomysql import OperationalError
 from aiomysql.cursors import DeserializationCursor, DictCursor
 from urllib.parse import urlparse
 
+from typing import Dict, List
+
 
 class AsyncMysql(Connection):
 
     def __init__(self, *args, **kwargs):
         super(AsyncMysql, self).__init__(*args, **kwargs)
         self.default_cursors = (DeserializationCursor, DictCursor)
+        self.strict_url = 'mysql://{}:{}'.format(self.host, self.port)
+        self.connect_cursor = None
+
+    async def __aenter__(self):
+        try:
+            await self._connect()
+            self.connect_cursor = await self.cursor(*self.default_cursors)
+        except OperationalError:
+            logger.error(msg.format('OperationalError', self.strict_url))
+            return None
+        except:
+            logger.error(msg.format("UnExpected", self.strict_url))
+            return None
+        return self
 
     @classmethod
     def from_url(cls, url, **kwargs):
@@ -30,71 +46,34 @@ class AsyncMysql(Connection):
         url_options.update(kwargs)
         return cls(**url_options)
 
-    async def get_master_url(self, slave_info=None):
-        if not slave_info:
-            slave_info = await self.get_slave_status()
-        host = slave_info.get('Master_Host')
-        port = slave_info.get('Master_Port')
+    async def get_master_url(self, slave_info: Dict[str, str or int or float]) -> str:
+        host, port = slave_info.get('Master_Host'), slave_info.get('Master_Port')
         return 'mysql://{}:{}@{}:{}'.format(self.user, self._password, host, port)
 
-    async def _get_cursor(self):
-        msg = "A {} raised when handle a session to {}"
-        strict_url = 'mysql://{}:{}'.format(self.host, self.port)
+    async def get_status(self) -> Dict[str, str or int or float]:
+        await self.connect_cursor.execute('show global status')
+        data = await self.connect_cursor.fetchall()
+        return {x['Variable_name']:x['Value'] for x in data} if data else dict()
 
-        if self.closed:
-            try:
-                await self._connect()
-            except OperationalError:
-                logger.error(msg.format('OperationalError', strict_url))
-                return None
-            except:
-                logger.error(msg.format("UnExpected", strict_url))
-                return None
-        return await self.cursor(*self.default_cursors)
+    async def get_variables(self) -> Dict[str, str or int]:
+        await self.connect_cursor.execute('show variables')
+        data = await self.connect_cursor.fetchall()
+        return {x['Variable_name']:x['Value'] for x in data} if data else dict()
 
-    async def get_status(self):
-        cursor = await self._get_cursor()
-        if not cursor:
-            return dict()
+    async def get_slave_status(self) -> Dict[str, str or int]:
+        await self.connect_cursor.execute('show slave status')
+        data = await self.connect_cursor.fetchall()
+        return data[0] if data else dict()
 
-        await cursor.execute('show global status')
-        data = await cursor.fetchall()
-        return {x['Variable_name']:x['Value'] for x in data}
+    async def get_master_status(self) -> Dict[str, str or int]:
+        await self.connect_cursor.execute('show master status')
+        data = await self.connect_cursor.fetchall()
+        return data[0] if data else dict()
 
-    async def get_variables(self):
-        cursor = await self._get_cursor()
-        if not cursor:
-            return dict()
-
-        await cursor.execute('show variables')
-        data = await cursor.fetchall()
-        return {x['Variable_name']:x['Value'] for x in data}
-
-    async def get_slave_status(self):
-        cursor = await self._get_cursor()
-        if not cursor:
-            return dict()
-
-        await cursor.execute('show slave status')
-        data = await cursor.fetchall()
-        return data[0] if data else data
-
-    async def get_master_status(self):
-        cursor = await self._get_cursor()
-        if not cursor:
-            return dict()
-
-        await cursor.execute('show master status')
-        return await cursor.fetchall()
-
-    async def get_sql_output(self, sql, key=None):
-        cursor = await self._get_cursor()
-        if not cursor:
-            return dict()
-
-        await cursor.execute(sql)
-        data = await cursor.fetchall()
-        return {key: data} if key else data
+    async def get_sql_output(self, sql: str) -> List[Dict[str, str or int]]:
+        await self.connect_cursor.execute(sql)
+        data = await self.connect_cursor.fetchall()
+        return data if data else list()
 
 
 class MysqlInfo(object):
@@ -107,27 +86,26 @@ class MysqlInfo(object):
         # self.datastore['other_urls'], collection action will collect it after all self.urls finished.
         self.datastore = dict(cluster=list(), other_urls=set())
 
-    async def collection(self, url, cluster=True):
+    async def collection(self, url: str) -> dict:
         shadow_url = shadow_password(url)
 
         logger.info("Start collection for {}".format(shadow_url))
-        session = AsyncMysql.from_url(url)
-        status = await session.get_status()
-        variables = await session.get_variables()
-        master_status = await session.get_master_status()
-        slave_status = await session.get_slave_status()
+        async with AsyncMysql.from_url(url) as session:
+            status = await session.get_status()
+            variables = await session.get_variables()
+            slave_status = await session.get_slave_status()
 
-        if slave_status:
-            master_url = await session.get_master_url(slave_status)
-            if master_url not in self.urls:
-                logger.info("Detect new cluster node {}".format(shadow_password(master_url)))
-                self.datastore['other_urls'].add(master_url)
-                self.datastore['cluster'].append(dict(arch=dict(master=shadow_password(master_url),
-                                                                slave=shadow_url),
-                                                      state=slave_status))
+            if slave_status:
+                master_url = await session.get_master_url(slave_status)
+                if master_url not in self.urls:
+                    logger.info("Detect new cluster node {}".format(shadow_password(master_url)))
+                    self.datastore['other_urls'].add(master_url)
+                    self.datastore['cluster'].append(dict(arch=dict(master=shadow_password(master_url),
+                                                                    slave=shadow_url),
+                                                          state=slave_status))
         return {shadow_url: dict(status, **variables)}
 
-    async def get_all_datas(self):
+    async def get_all_datas(self) -> dict:
         results = await gather(*[ensure_future(self.collection(url)) for url in self.urls])
 
         if self.datastore['other_urls']:

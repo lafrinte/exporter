@@ -11,6 +11,8 @@ from .utils import shadow_password
 from aredis import StrictRedis
 from aredis import ResponseError, ConnectionError, TimeoutError
 
+from typing import Dict, List, Set
+
 
 def parse_redis_cluster_nodes(func):
 
@@ -77,7 +79,7 @@ class AsyncRedis(StrictRedis):
         self.password = self.connection_kwargs["password"]
         self.strict_url = "redis://{}:{}".format(self.connection_kwargs["host"], self.connection_kwargs["port"])
 
-    async def is_instance_alive(self):
+    async def is_instance_alive(self) -> bool:
         msg = "A {} raised when handle a session to {}"
 
         try:
@@ -92,11 +94,8 @@ class AsyncRedis(StrictRedis):
             logger.error(msg.format("UnExpected", self.strict_url))
             return False
 
-    async def is_cluster(self, instance_data=None):
+    async def is_cluster(self) -> bool:
         msg = "A {} raised when handle a session to {}"
-
-        if instance_data:
-            return True if instance_data.get("redis_mode") == "cluster" else False
 
         try:
             return True if await self.cluster_info() else False
@@ -114,27 +113,26 @@ class AsyncRedis(StrictRedis):
             return False
 
     @parse_redis_cluster_nodes
-    async def get_cluster_nodes_info(self):
+    async def get_cluster_nodes_info(self) -> str:
         return await self.execute_command("cluster nodes")
 
     # return all url in the same cluster. if the login url requires password, the url returned will
     # add the password into url
     # url with no password: redis://localhost:port
     # url with password:    redis://:password@localhost:port
-    async def get_cluster_nodes_set(self, nodes_info=None):
-        info = await self.get_cluster_nodes_info() if not nodes_info else nodes_info
-        source_nodes = (x for x in map(lambda x: x.get("url"), info))
+    async def get_cluster_nodes_set(self, nodes_info: List[Dict]) -> Set[str]:
+        source_nodes = (x for x in map(lambda x: x.get("url"), nodes_info))
         if self.password:
             source_nodes = (x for x in map(lambda x:''.join([x[:8], ':', self.password, '@', x[8:]]), source_nodes))
         return set(source_nodes)
 
-    async def get_instance_info(self):
+    async def get_instance_info(self) -> Dict[str, str or int or float]:
         is_alive = await self.is_instance_alive()
-        return await self.info() if is_alive else None
+        return await self.info() if is_alive else dict()
 
-    async def get_cluster_state_info(self):
+    async def get_cluster_state_info(self) -> Dict[str, str or int or float]:
         is_cluster = await self.is_cluster()
-        return await self.cluster_info() if is_cluster else None
+        return await self.cluster_info() if is_cluster else dict()
 
 
 class RedisInfo(object):
@@ -145,7 +143,7 @@ class RedisInfo(object):
         self.datastore = dict(cluster_urls=set(),
                               other_urls=set())
 
-    async def collection(self, url, cluster=True):
+    async def collection(self, url, cluster=True) -> dict:
         data, shadow_url = dict(instance=dict(), cluster=dict()), shadow_password(url)
 
         logger.info("Start collection for {}".format(shadow_url))
@@ -163,7 +161,7 @@ class RedisInfo(object):
             data['cluster']['state'] = await session.get_cluster_state_info()
         return data
 
-    async def get_all_datas(self):
+    async def get_all_datas(self) -> dict:
         results = await gather(*[ensure_future(self.collection(url)) for url in self.urls])
         undo_urls = self.datastore["other_urls"] - self.urls
 
