@@ -143,31 +143,31 @@ class RedisInfo(object):
         self.datastore = dict(cluster_urls=set(),
                               other_urls=set())
 
-    async def collection(self, url, cluster=True) -> Dict[str, Dict]:
-        data, shadow_url = dict(instance=dict(), cluster=dict()), shadow_password(url)
+    async def collection(self, url: str) -> Dict[str, Dict]:
+        instance, cluster, shadow_url = dict(), dict(), shadow_password(url)
 
         logger.info("Start collection for {}".format(shadow_url))
         session = AsyncRedis.from_url(url, **self.options)
-        data["instance"][shadow_url] = await session.get_instance_info()
-
-        if cluster and data["instance"][shadow_url].get('redis_mode') == 'cluster' and url not in self.datastore["cluster_urls"]:
+        instance = await session.get_instance_info()
+        print(instance.get('redis_mode'))
+        if instance.get('redis_mode') == 'cluster' and url not in self.datastore["cluster_urls"]:
             logger.info("Detect new cluster node {}, start to get cluster info".format(shadow_url))
-            data['cluster']['arch'] = await session.get_cluster_nodes_info()
-            nodes = await session.get_cluster_nodes_set(data['cluster']['arch'])
+            cluster['arch'] = await session.get_cluster_nodes_info()
+            nodes = await session.get_cluster_nodes_set(cluster['arch'])
 
             # reflush cluster_urls and other urls
             self.datastore["cluster_urls"] = self.datastore["cluster_urls"] | nodes
             self.datastore["other_urls"] = self.datastore["other_urls"] | nodes
-            data['cluster']['state'] = await session.get_cluster_state_info()
-        return data
+            cluster['state'] = await session.get_cluster_state_info()
+        return shadow_url, instance, cluster
 
     async def get_all_datas(self) -> Dict[str, Dict]:
         results = await gather(*[ensure_future(self.collection(url)) for url in self.urls])
         undo_urls = self.datastore["other_urls"] - self.urls
 
         if undo_urls:
-            undo_result = await gather(*[ensure_future(self.collection(url, False)) for url in undo_urls])
+            undo_result = await gather(*[ensure_future(self.collection(url)) for url in undo_urls])
             results.extend(undo_result)
 
-        return dict(instance=[x["instance"] for x in results if x.get("instance")],
-                    cluster=[x["cluster"] for x in results if x.get("cluster")])
+        return dict(instance={x[0]:x[1] for x in results if x[1]},
+                    cluster=[x[2] for x in results if x[2]])

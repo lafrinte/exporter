@@ -75,66 +75,50 @@ cluster archtechive is from command `show slave status`, getting master host and
 
 ```
 {
-    "instance":[
-        {
-            "redis:\/\/localhost":{
-                "redis_version":"5.0.3",
-                "redis_git_sha1":0,
-                "redis_git_dirty":0,
-                ...
-            }
+    "instance":{
+        "redis:\/\/localhost":{
+            "redis_version":"5.0.3",
+            "redis_git_sha1":0,
+            "redis_git_dirty":0,
+            ...
         },
-        {
-            "redis:\/\/172.21.3.163":{
-                "redis_version":"3.2.8",
-                "redis_git_sha1":0,
-                "redis_git_dirty":0,
-                ...
-            }
+        "redis:\/\/172.21.3.163":{
+            "redis_version":"3.2.8",
+            "redis_git_sha1":0,
+            "redis_git_dirty":0,
+            ...
         },
-        {
-            "redis:\/\/172.21.3.165:6380":{
-                "redis_version":"3.2.8",
-                "redis_git_sha1":0,
-                "redis_git_dirty":0,
-                ...
-            }
+        "redis:\/\/172.21.3.165:6380":{
+            "redis_version":"3.2.8",
+            "redis_git_sha1":0,
+            "redis_git_dirty":0,
+            ...
         },
-        {
-            "redis:\/\/172.21.3.165:6379":{
-                "redis_version":"3.2.8",
-                "redis_git_sha1":0,
-                "redis_git_dirty":0,
-                ...
-            }
+        "redis:\/\/172.21.3.165:6379":{
+            "redis_version":"3.2.8",
+            "redis_git_sha1":0,
+            "redis_git_dirty":0,
+            ...
         },
-        {
-            "redis:\/\/172.21.3.164:6380":null
+        "redis:\/\/172.21.3.164:6380": null,
+        "redis:\/\/172.21.3.164:6379":{
+            "redis_version":"3.2.8",
+            "redis_git_sha1":0,
+            "redis_git_dirty":0,
+            ...
         },
-        {
-            "redis:\/\/172.21.3.164:6379":{
-                "redis_version":"3.2.8",
-                "redis_git_sha1":0,
-                "redis_git_dirty":0,
-                ...
-            }
+        "redis:\/\/172.21.3.163:6379":{
+            "redis_version":"3.2.8",
+            "redis_git_sha1":0,
+            "redis_git_dirty":0,
+            ...
         },
-        {
-            "redis:\/\/172.21.3.163:6379":{
-                "redis_version":"3.2.8",
-                "redis_git_sha1":0,
-                "redis_git_dirty":0,
-                ...
-            }
-        },
-        {
-            "redis:\/\/172.21.3.163:6380":{
-                "redis_version":"3.2.8",
-                "redis_git_sha1":0,
-                ...
-            }
+        "redis:\/\/172.21.3.163:6380":{
+            "redis_version":"3.2.8",
+            "redis_git_sha1":0,
+            ...
         }
-    ],
+    },
     "cluster":[
         {
             "arch":[
@@ -258,29 +242,23 @@ cluster archtechive is from command `show slave status`, getting master host and
 
 ```
 {
-    "instance":[
-        {
-            "mysql:\/\/172.18.232.142:8801":{
-                "Aborted_clients":"29517",
-                "Aborted_connects":"0",
-                ...
-            }
+    "instance": {
+        "mysql:\/\/172.18.232.142:8801":{
+            "Aborted_clients":"29517",
+            "Aborted_connects":"0",
+            ...
         },
-        {
-            "mysql:\/\/127.0.0.1:3306":{
-                "Aborted_clients":"6",
-                "Aborted_connects":"0",
-                ...
-            }
+        "mysql:\/\/127.0.0.1:3306":{
+            "Aborted_clients":"6",
+            "Aborted_connects":"0",
+            ...
         },
-        {
-            "mysql:\/\/172.18.232.144:8801":{
-                "Aborted_clients":"27035",
-                "Aborted_connects":"5",
-                ...
-            }
+        "mysql:\/\/172.18.232.144:8801":{
+            "Aborted_clients":"27035",
+            "Aborted_connects":"5",
+            ...
         }
-    ],
+    },
     "cluster":[
         {
             "arch":{
