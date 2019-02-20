@@ -143,7 +143,7 @@ class RedisInfo(object):
         self.datastore = dict(cluster_urls=set(),
                               other_urls=set())
 
-    async def collection(self, url, cluster=True) -> dict:
+    async def collection(self, url, cluster=True) -> Dict[str, Dict]:
         data, shadow_url = dict(instance=dict(), cluster=dict()), shadow_password(url)
 
         logger.info("Start collection for {}".format(shadow_url))
@@ -161,7 +161,7 @@ class RedisInfo(object):
             data['cluster']['state'] = await session.get_cluster_state_info()
         return data
 
-    async def get_all_datas(self) -> dict:
+    async def get_all_datas(self) -> Dict[str, Dict]:
         results = await gather(*[ensure_future(self.collection(url)) for url in self.urls])
         undo_urls = self.datastore["other_urls"] - self.urls
 

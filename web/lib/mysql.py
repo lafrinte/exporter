@@ -86,7 +86,7 @@ class MysqlInfo(object):
         # self.datastore['other_urls'], collection action will collect it after all self.urls finished.
         self.datastore = dict(cluster=list(), other_urls=set())
 
-    async def collection(self, url: str) -> dict:
+    async def collection(self, url: str) -> Dict[str, Dict]:
         shadow_url = shadow_password(url)
 
         logger.info("Start collection for {}".format(shadow_url))
@@ -105,7 +105,7 @@ class MysqlInfo(object):
                                                           state=slave_status))
         return {shadow_url: dict(status, **variables)}
 
-    async def get_all_datas(self) -> dict:
+    async def get_all_datas(self) -> Dict[str, Dict]:
         results = await gather(*[ensure_future(self.collection(url)) for url in self.urls])
 
         if self.datastore['other_urls']:
