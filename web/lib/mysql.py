@@ -23,6 +23,8 @@ class AsyncMysql(Connection):
         self.connect_cursor = None
 
     async def __aenter__(self):
+        msg = 'An {} Error raised when connect to {}'
+
         try:
             await self._connect()
             self.connect_cursor = await self.cursor(*self.default_cursors)
@@ -103,7 +105,7 @@ class MysqlInfo(object):
                     self.datastore['cluster'].append(dict(arch=dict(master=shadow_password(master_url),
                                                                     slave=shadow_url),
                                                           state=slave_status))
-        return {shadow_url: dict(status, **variables)}
+        return shadow_url, dict(status, **variables)
 
     async def get_all_datas(self) -> Dict[str, Dict]:
         results = await gather(*[ensure_future(self.collection(url)) for url in self.urls])
@@ -111,5 +113,5 @@ class MysqlInfo(object):
         if self.datastore['other_urls']:
             other_results = await gather(*[ensure_future(self.collection(url)) for url in self.datastore['other_urls']])
             results.extend(other_results)
-        return dict(instance=[x for x in results],
+        return dict(instance={x[0]:x[1] for x in results},
                     cluster=self.datastore['cluster'])
