@@ -149,7 +149,7 @@ class RedisInfo(object):
         logger.info("Start collection for {}".format(shadow_url))
         session = AsyncRedis.from_url(url, **self.options)
         instance = await session.get_instance_info()
-        print(instance.get('redis_mode'))
+
         if instance.get('redis_mode') == 'cluster' and url not in self.datastore["cluster_urls"]:
             logger.info("Detect new cluster node {}, start to get cluster info".format(shadow_url))
             cluster['arch'] = await session.get_cluster_nodes_info()

@@ -57,22 +57,22 @@ class AsyncMysql(Connection):
         data = await self.connect_cursor.fetchall()
         return {x['Variable_name']:x['Value'] for x in data} if data else dict()
 
-    async def get_variables(self) -> Dict[str, str or int]:
+    async def get_variables(self) -> Dict[str, str or int or float]:
         await self.connect_cursor.execute('show variables')
         data = await self.connect_cursor.fetchall()
         return {x['Variable_name']:x['Value'] for x in data} if data else dict()
 
-    async def get_slave_status(self) -> Dict[str, str or int]:
+    async def get_slave_status(self) -> Dict[str, str or int or float]:
         await self.connect_cursor.execute('show slave status')
         data = await self.connect_cursor.fetchall()
         return data[0] if data else dict()
 
-    async def get_master_status(self) -> Dict[str, str or int]:
+    async def get_master_status(self) -> Dict[str, str or int or float]:
         await self.connect_cursor.execute('show master status')
         data = await self.connect_cursor.fetchall()
         return data[0] if data else dict()
 
-    async def get_sql_output(self, sql: str) -> List[Dict[str, str or int]]:
+    async def get_sql_output(self, sql: str) -> List[Dict[str, str or int or float]]:
         await self.connect_cursor.execute(sql)
         data = await self.connect_cursor.fetchall()
         return data if data else list()
