@@ -89,22 +89,23 @@ class MysqlInfo(object):
         self.datastore = dict(cluster=list(), other_urls=set())
 
     async def collection(self, url: str) -> Dict[str, Dict]:
-        shadow_url = shadow_password(url)
+        shadow_url, status, variables = shadow_password(url), dict(), dict()
 
         logger.info("Start collection for {}".format(shadow_url))
         async with AsyncMysql.from_url(url) as session:
-            status = await session.get_status()
-            variables = await session.get_variables()
-            slave_status = await session.get_slave_status()
+            if session:
+                status = await session.get_status()
+                variables = await session.get_variables()
+                slave_status = await session.get_slave_status()
 
-            if slave_status:
-                master_url = await session.get_master_url(slave_status)
-                if master_url not in self.urls:
-                    logger.info("Detect new cluster node {}".format(shadow_password(master_url)))
-                    self.datastore['other_urls'].add(master_url)
-                    self.datastore['cluster'].append(dict(arch=dict(master=shadow_password(master_url),
-                                                                    slave=shadow_url),
-                                                          state=slave_status))
+                if slave_status:
+                    master_url = await session.get_master_url(slave_status)
+                    if master_url not in self.urls:
+                        logger.info("Detect new cluster node {}".format(shadow_password(master_url)))
+                        self.datastore['other_urls'].add(master_url)
+                        self.datastore['cluster'].append(dict(arch=dict(master=shadow_password(master_url),
+                                                                        slave=shadow_url),
+                                                              state=slave_status))
         return shadow_url, dict(status, **variables)
 
     async def get_all_datas(self) -> Dict[str, Dict]:
