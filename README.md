@@ -3,7 +3,7 @@
 * command
 
 ```
-python -m sanic app.app --host=HOST --port=PORT --worker=WORKER_NUM
+python3 -m sanic app.app --host=HOST --port=PORT --worker=WORKER_NUM
 ```
 
 * log
@@ -27,13 +27,13 @@ cluster archtechive is from command `cluster nodes`
 if request from terminal, use `pretty=True` will enable indent to json data
 
 ```
-➜  redis-exporter git:(master) ✗ curl http://127.0.0.1:8000/metrics/redis\?pretty\=True\&url\=redis://:123@172.21.3.163\&url\=redis://localhost
+➜  json-exportor git:(master) ✗ curl http://127.0.0.1:8000/metrics/redis\?pretty\=True\&url\=redis://:123@172.21.3.163\&url\=redis://localhost
 ```
 
 * request monitor statue
 
 ```
-➜  redis-exporter git:(master) curl http://127.0.0.1:8000/api/state
+➜  json-exportor git:(master) ✗ curl http://127.0.0.1:8000/api/state
 {"state":"running"}%
 ```
 
@@ -50,7 +50,7 @@ cluster archtechive is from command `show slave status`, getting master host and
 * request mysql data
 
 ```
-➜  redis-exporter git:(master) ✗ curl http://127.0.0.1:8000/metrics/mysql\?pretty\=True\&url\=mysql://root:123@127.0.0.1:3306
+➜  json-exportor git:(master) ✗ curl http://127.0.0.1:8000/metrics/mysql\?pretty\=True\&url\=mysql://root:123@127.0.0.1:3306
 ```
 
 ## response
@@ -59,11 +59,11 @@ cluster archtechive is from command `show slave status`, getting master host and
 
 ```
 {
-   "instance": [
-      {instance_data1},
-      {instance_data2},
+   "instance": {
+      url1: data1,
+      url2: data2,
       ...
-   ],
+   },
    "cluster": [
       {
           "arch": {arch_data},
@@ -223,11 +223,11 @@ cluster archtechive is from command `show slave status`, getting master host and
 
 ```
 {
-   "instance": [
-      {instance_data1},
-      {instance_data2},
-      ...
-   ],
+   "instance": {
+      url1: data1,
+      url2: data2,
+       ...
+   },
    "cluster": [
       {
           "arch": {
@@ -283,4 +283,10 @@ cluster archtechive is from command `show slave status`, getting master host and
         }
     ]
 }
+```
+
+## test case
+
+```
+➜  json-exportor git:(master) ✗ py.test -q test_restful.py
 ```
